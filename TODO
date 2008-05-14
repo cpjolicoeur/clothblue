@@ -1,0 +1,1 @@
+*  make lists work better.  right now they all output as unordered lists.  make both <ul> and <ol> list items work correctly.
