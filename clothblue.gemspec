@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "ClothBlue"
-  s.version = "0.2.1"
+  s.version = "0.2.2"
   s.date = "Time.now"
   s.summary = "HTML to Markdown converter"
   s.email = "cpjolicoeur@gmail.com"
