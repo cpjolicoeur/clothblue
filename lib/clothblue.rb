@@ -17,25 +17,29 @@ class ClothBlue < String
 #--
   TEXT_FORMATTING = [
     ["<b>", "**"], ["</b>","**"], ["<em>","_"], ["</em>", "_"], ["<b>", "**"], 
-    ["</b>", "**"], ["<code>", "`"], ["<i>","_"], ["</i>", "_"]
+    ["</b>", "**"], ["<code>", "`"], ["<i>","_"], ["</i>", "_"],
     ["</code>", "`"], ["<strong>", "**"], ["</strong>", "**"] 
   ]
 
   HEADINGS = [
-    ["<h1>","# "], ["</h1>", "#"], ["<h2>","## "], ["</h2>", "##"], 
-    ["<h3>","### "], ["</h3>", "###"], ["<h4>","#### "], ["</h4>", "####"], 
-    ["<h5>","##### "], ["</h5>", "#####"], ["<h6>","###### "], ["</h6>", "######"]
+    ["<h1>","# "], ["</h1>", " #\n\n"], ["<h2>","## "], ["</h2>", " ##\n\n"], 
+    ["<h3>","### "], ["</h3>", " ###\n\n"], ["<h4>","#### "], ["</h4>", " ####\n\n"], 
+    ["<h5>","##### "], ["</h5>", " #####\n\n"], ["<h6>","###### "], ["</h6>", " ######\n\n"]
   ]
 
   STRUCTURES = [
-    ["<p>", ""],["</p>","\n\n"], ["<blockquote>", "> "], ["</blockquote>","\n"], 
-    ["<br />", "\n\n"], ["<br>", "\n\n"]
+    ["<p>", "\n\n"],["</p>","\n\n"], ["<blockquote>", "> "], ["</blockquote>","\n"], 
+    ["<br />", "\n"], ["<br>", "\n"]
   ]
 
   ENTITIES = [
     ["&#8220;", '"'], ["&#8221;", '"'], ["&#8212;", "--"], ["&#8212;", "--"], 
     ["&#8211;","-"], ["&#8230;", "..."], ["&#215;", " x "], ["&#8482;","(TM)"], 
     ["&#174;","(R)"], ["&#169;","(C)"], ["&#8217;", "'"]
+  ]
+  
+  LISTS = [
+    ["<ol>", ""], ["</ol>", "\n\n"], ["<ul>", ""], ["</ul>", "\n\n"], ["<li>", "+  "], ["</li>", "\n"]
   ]
 
   TABLES = [
@@ -48,12 +52,13 @@ class ClothBlue < String
   end
 
 #++  
-  #Call all necessary methods to convert a string of HTML into Textile markup.
+  #Call all necessary methods to convert a string of HTML into Markdown markup.
 
-  def to_textile
+  def to_markdown
     headings(@workingcopy)
     structure(@workingcopy)
     text_formatting(@workingcopy)
+    lists(@workingcopy)
     entities(@workingcopy)
     tables(@workingcopy)
     @workingcopy = CGI::unescapeHTML(@workingcopy)
@@ -65,39 +70,47 @@ class ClothBlue < String
   private
 
   def text_formatting(text)
-    TEXT_FORMATTING.each do |htmltag, textiletag|
-      text.gsub!(htmltag, textiletag)
+    TEXT_FORMATTING.each do |htmltag, markdowntag|
+      text.gsub!(htmltag, markdowntag)
     end
     text
   end
 
 
   def headings(text)
-    HEADINGS.each do |htmltag, textiletag|
-      text.gsub!(htmltag, textiletag)
+    HEADINGS.each do |htmltag, markdowntag|
+      text.gsub!(htmltag, markdowntag)
+    end
+    text
+  end
+  
+  
+  def lists(text)
+    LISTS.each do |htmltag, markdowntag|
+      text.gsub!(htmltag, markdowntag)
     end
     text
   end
 
 
   def entities(text)
-    ENTITIES.each do |htmlentity, textileentity|
-      text.gsub!(htmlentity, textileentity)
+    ENTITIES.each do |htmlentity, markdownentity|
+      text.gsub!(htmlentity, markdownentity)
     end
     text
   end
 
 
   def structure(text)
-    STRUCTURES.each do |htmltag, textiletag|
-      text.gsub!(htmltag, textiletag)
+    STRUCTURES.each do |htmltag, markdowntag|
+      text.gsub!(htmltag, markdowntag)
     end
     text
   end
 
   def tables(text)
-    TABLES.each do |htmltag, textiletag|
-      text.gsub!(htmltag, textiletag)
+    TABLES.each do |htmltag, markdowntag|
+      text.gsub!(htmltag, markdowntag)
     end
     text
   end
