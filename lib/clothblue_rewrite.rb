@@ -67,40 +67,41 @@ class ClothBlue #:nodoc:
   attr_reader :output
   
   # stack with tags which were not converted to html
+  @not_converted = []
   attr_reader :not_converted
   
   # skip conversion to markdown
+  @skip_conversion = false
   attr_reader :skip_conversion
   
   # keep html tags which cannot be converted to markdown
+  @keep_html = false
   attr_reader :keep_html
   
   # wrap output, set to 0 to skip wrapping
+  @body_width = 0
   attr_reader :body_width
   
   # minimum body width
+  @min_body_width = 25
   attr_reader :min_body_width
   
   # display links after each paragraph
+  @links_after_each_paragraph = false
   attr_reader :links_after_each_paragraph
   
   # whether last processed node was a block tag or not
+  @last_was_block_tag = false
   attr_reader :last_was_block_tag
   
   # name of last closed tag
+  @last_closed_tag = ''
   attr_reader :last_closed_tag
   
   # Constructor
   def initialize(links_after_each_paragraph = MDFY_LINKS_EACH_PARAGRAPH, body_width = MDFY_BODYWIDTH, keep_html = MDFY_KEEPHTML)
-    @links_after_each_paragraph = links_after_each_paragraph || false
-    @keep_html = keep_html || false
-    @min_body_width = 25
-    @body_width = body_width || 0
-    @skip_conversion = false
-    @not_cnverted = []
-    @last_was_block_tag = false
-    @last_closed_tag = ''
-    
+    @links_after_each_paragraph = links_after_each_paragraph
+    @keep_html = keep_html
     @body_width = (body_width > @min_body_width) ? body_width.to_i : false
     
     @parser = ParseHTML.new
@@ -113,6 +114,14 @@ class ClothBlue #:nodoc:
     @parser.html = html
     @output = parse
     return @output
+  end
+  
+  # iterate through the nodes and decide what to do with the current node
+  def parse
+    @output = ''
+    # drop tags  
+  end
+    
   end
   
 end
