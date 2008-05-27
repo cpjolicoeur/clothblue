@@ -6,7 +6,7 @@ TODO: enhance docs, as more methods come availlable
 #++
 
 Author:: Craig P Jolicoeur (mailto:cpjolicoeur@gmail.com)
-Copyright:: Copyright (c) 2008 Phillip Gawlowski
+Copyright:: Copyright (c) 2008 Craig P Jolicoeur
 License:: MIT
 =end
 
