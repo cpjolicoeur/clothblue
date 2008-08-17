@@ -148,7 +148,7 @@ class ClothBlue #:nodoc:
   def parse
     @output = ''
     # drop tags that are in the DROP list
-    # TODO: implement droping of @drop tags
+    # TODO: implement dropping of @drop tags
     
     while token = @parser.next_node
       case @parser.node_type
