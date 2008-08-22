@@ -1,9 +1,11 @@
-require 'yaml'
+#
+# Version 1.12 - Aug 20, 2008
+#
 
 class ParseHTML #:nodoc:
   
   # tags which are always empty (<br />, etc.)
-  EMPTY_TAGS = %w(br hr input img)
+  EMPTY_TAGS = %w(br hr input img area link meta param)
   
   # tags with preformatted text - whitespace won't be touched in them
   PREFORMATTED_TAGS = %w(script style pre code)
@@ -51,8 +53,15 @@ class ParseHTML #:nodoc:
                 		'body' => true,
                 		'head' => true,
                 		'meta' => true,
+                		'link' => true,
                 		'style' => true,
                 		'title' => true,
+                		# media tags to render as block
+                		'map' => true,
+                		'object' => true,
+                		'param' => true,
+                		'embed' => true,
+                		'area' => true,
                 		# inline elements
                 		'a' => false,
                 		'abbr' => false,
@@ -77,8 +86,6 @@ class ParseHTML #:nodoc:
                 		'iframe' => false,
                 		'kbd' => false,
                 		'label' => false,
-                		'map' => false,
-                		'object' => false,
                 		'q' => false,
                 		'samp' => false,
                 		'script' => false,
@@ -101,67 +108,61 @@ class ParseHTML #:nodoc:
   # - comment
   # - doctype
   # - pi (processing instruction)
-  @node_type = ''
-  attr_accessor :node_type
+  attr_reader :node_type
   
   # current node context
   # - either a simple string (text node) or something like
   # - <tag attrib="value"...>
-  @node = ''
   attr_accessor :node
+  
+  # supress HTML tags inside preformatted tags
+  attr_accessor :no_tags_in_code
   
   # whether the current node is an opening tag (<a>) or not (</a>)
   # - set to nil if current node is not a tag
   # - NOTE: empty tags (<br />) set this to true as well!
-  @is_start_tag = false
   attr_reader :is_start_tag
   
   # whether current node is an empty tag (<br />) or not (<a></a>)
-  @is_empty_tag = false
   attr_reader :is_empty_tag
   
+  # whether the current tag is a block level element
+  attr_reader :is_block_element
+  
   # tag name
-  @tag_name = ''
   attr_reader :tag_name
   
   # attributes of current_tag (in hash)
-  @tag_attributes = nil
   attr_reader :tag_attributes
   
-  # whether the current tag is a block level element
-  @is_block_element = false
-  attr_reader :is_block_element
-  
   # keep whitespace formatting
-  @keep_whitespace = 0
   attr_reader :keep_whitespace
   
   # list of open tags (array)
   # - count this to get current depth
-  attr_accessor :open_tags
+  attr_reader :open_tags
   
 
   def initialize(html = '')
     @html = html
     @open_tags = []
-    @loop = 1
+    @node_type, @node, @tag_name = '', '', ''
+    @is_start_tag, @is_empty_tag, @is_block_element, @no_tags_in_code = false, false, false, false
+    @tag_attributes = nil
+    @keep_whitespace = 0
   end
   
   # get next node
   def next_node
-    # puts "\n\n* loop: #{@loop}"
     return false if (@html.nil? || @html.empty?)
 
-    skip_whitespace = true
-    # puts "  in next node - tag_name: #{@tag_name}"
+    skip_whitespace = true # FIXME: should probably be a class variable?
     if (@is_start_tag && !@is_empty_tag)
       @open_tags << @tag_name
       @keep_whitespace += 1 if PREFORMATTED_TAGS.include?(@tag_name)
     end
     
     if (@html[0,1] == '<')
-      # puts "  new token: #{html[0,9]}"
-      # puts "  open tags: #{@open_tags}"
       token = html[0,9]
       if (token[0,2] == '<?')
         # xml, prolog, or other pi's
@@ -174,7 +175,7 @@ class ParseHTML #:nodoc:
         # HTML comment
         pos = @html.index('-->')
         if pos.nil?
-          # could not find a closing -->, use next < tag instead
+          # could not find a closing -->, use next gt tag instead
           # this is what firefox does with its parsing
           pos = @html.index('>') + 1
         else
@@ -204,30 +205,48 @@ class ParseHTML #:nodoc:
         return true
       end # end cdata
       if (parse_tag)
-        # puts "  After parse tag =>tag_name: #{@tag_name}, start_tag: #{@is_start_tag}, empty_tag: #{@is_empty_tag}"
         # seems to be a tag so handle whitespaces
-        @skip_whitespace = @is_block_element
+        skip_whitespace = @is_block_element ? true : false
+        return true
       end # end parse_tag
     end
     
-    @skip_whitespace = false if @keep_whitespace
+    skip_whitespace = false if @keep_whitespace
     
     # when we get here it seems to be a text node
-    pos = @html.index('<')
-    pos = @html.size if pos.nil?
+    pos = @html.index('<') || @html.size
     
     set_node('text', pos)
     handle_whitespaces
-    return next_node if (@skip_whitespace && @node == ' ')
-    @skip_whitespace = false
-    @loop += 1
+    return next_node if (skip_whitespace && @node == ' ')
+    skip_whitespace = false
     return true
   end # end next_node
   
+  # normalize self.node
+  def normalize_node
+    @node = '<'
+    unless (@is_start_tag)
+      @node << "/#{@tag_name}>"
+      return
+    end
+    @node << @tag_name
+    @tag_attributes.each do |name, value|
+      str = " #{name}=\"" + value.gsub(/\"/, '&quot;') + "\""
+      @node << str
+    end
+    @node << ' /' if (@is_empty_tag)
+    @node << '>'
+  end
+  
+  private
+  
   # parse tag, set tag name and attributes, check for closing tag, etc...
   def parse_tag
-    a_ord = 'a'[0] # a ascii value
-    z_ord = 'z'[0] # z ascii value
+    a_ord = ?a
+    z_ord = ?z
+    special_ords = [?:, ?-] # for xml:lang and http-equiv
+    
     tag_name = ''
     pos = 1
     is_start_tag = (@html[pos,1] != '/')
@@ -237,7 +256,7 @@ class ParseHTML #:nodoc:
     while (@html[pos,1])
       char = @html.downcase[pos,1]
       pos_ord = char[0]
-      if ((pos_ord >= a_ord && pos_ord <= z_ord) || (tag_name.empty? && char.is_numeric?))
+      if ((pos_ord >= a_ord && pos_ord <= z_ord) || (!tag_name.empty? && is_numeric?(char)))
         tag_name << char
         pos += 1
       else
@@ -246,10 +265,15 @@ class ParseHTML #:nodoc:
       end
     end # end while
     
-    tag_name = tag_name.downcase
-
+    tag_name.downcase!
     if (tag_name.empty? || !BLOCK_ELEMENTS.include?(tag_name))
       # something went wrong, invalid tag
+      invalid_tag
+      return false
+    end
+    
+    if (@no_tags_in_code && @open_tags.last == 'code' && !(tag_name == 'code' && !is_start_tag))
+      # supress all HTML tags inside code tags
       invalid_tag
       return false
     end
@@ -321,7 +345,6 @@ class ParseHTML #:nodoc:
     @node = @html[0,pos]
     @html = @html[pos, @html.size-pos]
     @tag_name = tag_name
-    # puts "  -- just set @tag_name: #{@tag_name}"
     @tag_attributes = attributes
     @is_start_tag = is_start_tag
     @is_empty_tag = is_empty_tag || EMPTY_TAGS.include?(tag_name)
@@ -336,19 +359,14 @@ class ParseHTML #:nodoc:
   
   # handle invalid tags
   def invalid_tag
-    raise "INVALID TAG"
-    # puts "INVALID TAG: node: #{@node}"
     @html = '&lt;' + @html.slice(1, @html.size - 1)
-    return @html
   end
   
   # update all variables and make @html shorter
   # - param type => @nodeType
   # - param pos  => which position to cut at
   def set_node(type, pos)
-    # puts "  -- inside set_node: type => #{type}, pos => #{pos} | @node_type: #{@node_type}"
-    if type == 'tag' # @node_type == 'tag'
-      # puts "  -- inside set node: setting vars to nil"
+    if (@node_type == 'tag') # (type == 'tag')
       # set specific tag vars to null
       # type == tag should not be called here
       # see parse_tag for more info
@@ -361,7 +379,6 @@ class ParseHTML #:nodoc:
     @node_type = type
     @node = @html[0, pos]
     @html = @html[pos, @html.size-pos]
-    # puts "  -- at end of set_node: @node_type => #{@node_type}, @node => #{@node}"
   end # end set_node
   
   # check if @html begins with a specific string
@@ -375,52 +392,39 @@ class ParseHTML #:nodoc:
     @node.gsub!(/\s+/, ' ')
   end
   
-  # normalize self::node
-  def normalize_node
-    @node = '<'
-    if (@is_start_tag)
-      @node << "/#{@tag_name}>"
-      return
-    end
-    @node << @tag_name
-    @tag_attributes.each do |name, value|
-      str = ' ' + name + '="' + value.gsub(/\"/, '&quot;') + '"'
-      @node << str
-    end
-    @node << ' /' if (@is_empty_tag)
-    @node << '>'
+  # check if a string is a valid numeric value
+  def is_numeric?(val)
+    Float val rescue false
   end
   
   # indent HTML properly
-  def self.indent_html(html, indent = '  ')
+  def self.indent_html(html, indent = '  ', no_tags_in_code = false)
     parser = ParseHTML.new(html)
+    parser.no_tags_in_code = no_tags_in_code
     html = ''
     last = true # last tag was block element
     indent_a = []
 
     while (parser.next_node)
-      puts "parser: #{parser.to_yaml}"
       parser.normalize_node if (parser.node_type == 'tag')
       if ((parser.node_type == 'tag') && parser.is_block_element)
         is_pre_or_code = ['code', 'pre'].include?(parser.tag_name)
-        if(!parser.keep_whitespace && !last && !is_pre_or_code)
+        if(parser.keep_whitespace.zero? && !last && !is_pre_or_code)
           html = html.rstrip + "\n"
         end
         if (parser.is_start_tag)
           html << indent_a.join(' ')
           if (!parser.is_empty_tag)
             indent_a << indent
-            puts "added to the indent: size => #{indent_a.size}"
           end
         else
           indent_a.pop
-          puts "popped from the indent: size => #{indent_a.size}"
           if (!is_pre_or_code)
             html << indent_a.join(' ')
           end
         end
         html << parser.node
-        if (!parser.keep_whitespace && !(is_pre_or_code && parser.is_start_tag))
+        if (parser.keep_whitespace.zero? && !(is_pre_or_code && parser.is_start_tag))
           html << "\n"
         end
         last = true
@@ -428,8 +432,8 @@ class ParseHTML #:nodoc:
         if (parser.node_type == 'tag' && parser.tag_name == 'br')
           html << (parser.node + "\n")
           last = true
-          continue
-        elsif (last && !parser.keep_whitespace)
+          next
+        elsif (last && parser.keep_whitespace.zero?)
           html << indent_a.join(' ')
           parser.node = parser.node.lstrip
         end
@@ -446,9 +450,3 @@ class ParseHTML #:nodoc:
   end
   
 end # end class ParseHTML
-
-class String
-  def is_numeric?
-    Float self rescue false
-  end
-end
