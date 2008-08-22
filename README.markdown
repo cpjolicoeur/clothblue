@@ -1,46 +1,46 @@
-= ClothBlue HTML 2 Markdown converter
+# ClothBlue 
 
-== What it is
+HTML to Markdown library
+
+## What it is
 
 A script to convert HTML into Markdown markup for use, for example, with BlueCloth.
 
-
-== Requirements
+## Requirements
 
 All you need is Ruby.
 
-== Get it
+## Get it
 
-Available as a gem on GitHub:
+Available as a gem on GitHub: (coming soon)
 
-Or download from:
+Or download from: http://clothblue.rubyforge.org
 
-Or get the source:
+Or get the source: http://github.com/cpjolicoeur/clothblue
 
+## Features
 
-== Features
-
-This is alpha software, and only a few Markdown rules have been implemented yet:
+This is beta software, and only a few Markdown rules have been implemented yet:
  * font markup and weight (<b>, <strong>, ...)
  * text formatting (<sub>, <sup>, <ins>,<del>)
 
-== Usage
+## Usage
 
-require 'clothblue'
+`require 'clothblue'`
 
-text = ClothBlue.new("<b>Bold</b> <em>HTML</em>!")
-text.to_markdown
+`text = ClothBlue.new("<b>Bold</b> <em>HTML</em>!")`
 
-== Get Help
+`text.to_markdown`
+
+## Get Help
 
 Feel free to contact me, or peruse the homepage.
 
  * http://craigjolicoeur.com/clothblue/
  * http://github.com/cpjolicoeur/clothblue/
 
-== Acknowledgments
+## Acknowledgments
 
-ClothBlue is heavily copied from the ClothRed library (http://clothred.rubyforge.org/).  Much thanks to
-Phillip Gawlowski for the initial idea and code.  I basically just ported this HTML to Textile converter
-to work with Markdown instead of Textile.  The format of the code and README docs are pretty much exact
-clones as far as the format is concerned.
+ClothBlue received inspiration from the [ClothRed library](http://clothred.rubyforge.org/) and the [Markdownify PHP library](http://milianw.de/projects/markdownify/).
+
+[Markdown](http://daringfireball.com/projects/markdown) is, of course, written by [John Gruber](http://daringfireball.com).  [Markdown Extra](http://www.michelf.com/projects/php-markdown/extra/) support is also included.
