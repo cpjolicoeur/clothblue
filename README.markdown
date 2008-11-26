@@ -1,3 +1,7 @@
+# BEWARE: THIS CODE IS NOT CURRENTLY FUNCTIONAL 
+
+ClothBlue is currently undergoing a major rewrite and the code currently on GitHub is almost certainly non-functional.
+  
 # ClothBlue 
 
 HTML to Markdown library
@@ -27,17 +31,15 @@ This is beta software, and only a few Markdown rules have been implemented yet:
 
 ## Usage
 
-`require 'clothblue'`
-
-`text = ClothBlue.new("<b>Bold</b> <em>HTML</em>!")`
-
-`text.to_markdown`
+    require 'clothblue'
+    text = ClothBlue.new("<b>Bold</b> <em>HTML</em>!")
+    text.to_markdown
 
 ## Get Help
 
 Feel free to contact me, or view the homepage.
 
-* http://craigjolicoeur.com/clothblue/
+* http://craigjolicoeur.com/blog/clothblue/
 * http://github.com/cpjolicoeur/clothblue/
 
 ## Developers
@@ -73,3 +75,5 @@ THE SOFTWARE.
 ClothBlue received inspiration from the [ClothRed library](http://clothred.rubyforge.org/) and the [Markdownify PHP library](http://milianw.de/projects/markdownify/).
 
 [Markdown](http://daringfireball.com/projects/markdown) is, of course, written by [John Gruber](http://daringfireball.com).  Michel Fortin's [Markdown Extra](http://www.michelf.com/projects/php-markdown/extra/) support is also included.
+
+All attempts have been made to pass Michel Fortin's [MDTest Suite](http://article.gmane.org/gmane.text.markdown.general/2540) as well.

@@ -1,12 +1,12 @@
-# require 'html/document'
 require 'parsehtml/parsehtml'
 
-class ClothBlue #:nodoc:
+class ClothBlue
   
   # Constants
-  MDFY_LINKS_EACH_PARAGRAPH = false
-  MDFY_BODYWIDTH = false
-  MDFY_KEEPHTML = true
+  LINKS_EACH_PARAGRAPH = false
+  BODYWIDTH = false
+  KEEPHTML = true
+  MIN_BODYWIDTH = 25
   
   # tags which can be handled by markdown
   IS_MARKDOWNABLE = {
@@ -34,10 +34,10 @@ class ClothBlue #:nodoc:
   }
   
   # html tags to be ignored (content will be parsed)
-  IGNORE = []
+  IGNORE = %w(html body)
   
   # html tags to be dropped (content will not be parsed!)
-  DROP = %w(script head style form)
+  DROP = %w(script head style form area object param iframe)
   
   # Markdown indents which could be wrapped
   WRAPPABLE_INDENTS = [
@@ -62,35 +62,22 @@ class ClothBlue #:nodoc:
   ]
   
   # parseHTML parser
-  attr_reader :parser
+  attr_accessor :parser
   
   # markdown output
-  @output = ''
-  attr_accessor :output
+  attr_reader :output
   
   # stack with tags which were not converted to html
-  @not_converted = []
   attr_reader :not_converted
   
   # skip conversion to markdown
-  @skip_conversion = false
   attr_reader :skip_conversion
   
   # keep html tags which cannot be converted to markdown
-  @keep_html = false
   attr_reader :keep_html
   
   # wrap output, set to 0 to skip wrapping
-  @body_width = 0
   attr_reader :body_width
-  
-  # minimum body width
-  @min_body_width = 25
-  attr_reader :min_body_width
-  
-  # display links after each paragraph
-  @links_after_each_paragraph = false
-  attr_reader :links_after_each_paragraph
   
   # whether last processed node was a block tag or not
   @last_was_block_tag = false
@@ -121,12 +108,16 @@ class ClothBlue #:nodoc:
   attr_accessor :stack
   
   # Constructor
-  def initialize(text = '', links_after_each_paragraph = MDFY_LINKS_EACH_PARAGRAPH, body_width = MDFY_BODYWIDTH, keep_html = MDFY_KEEPHTML)
+  def initialize(text = '', links_after_each_paragraph = LINKS_EACH_PARAGRAPH, body_width = BODYWIDTH, keep_html = KEEPHTML)
     @links_after_each_paragraph = links_after_each_paragraph
     @keep_html = keep_html
-    @body_width = (body_width > @min_body_width) ? body_width.to_i : false
+    @body_width = (body_width > MIN_BODYWIDTH) ? body_width.to_i : MIN_BODYWIDTH
     
     @parser = HTML::Tokenizer.new(text)
+    
+    @output = ''
+    @not_converted = []
+    @skip_conversion = false
     
     @search, @replace = [], []
     ESCAPE_IN_TEXT.each do |s,r|
